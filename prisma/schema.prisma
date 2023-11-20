@@ -6,6 +6,69 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model User {
+  id               String            @id @default(cuid())
+  name             String
+  email            String            @unique
+  password         String?
+  image            String?
+  subscriptionPlan String            @default("free")
+  usageCount       Int               @default(0)
+  userSub          UserSubscription?
+  urls             Url[]
+  apiKey           ApiKey[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Url {
+  id          String    @id @default(cuid())
+  original    String
+  short       String    @unique
+  customShort String?   @unique
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  clicks      Click[]
+  isActive    Boolean   @default(true)
+  expiryDate  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Click {
+  id        String   @id @default(cuid())
+  urlId     String
+  url       Url      @relation(fields: [urlId], references: [id])
+  referrer  String?
+  userAgent String?
+  ip        String?
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  userId     String
+  isExpired  Boolean  @default(false)
+  expiryDate DateTime
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model UserSubscription {
+  id                   String   @id @default(cuid())
+  stripeSubId          String?  @unique
+  stripeCustomerId     String   @unique
+  stripePriceId        String
+  stripeCurrentPlanEnd DateTime
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id])
 }
