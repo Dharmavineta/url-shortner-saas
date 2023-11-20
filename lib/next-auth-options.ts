@@ -36,7 +36,7 @@ export const authOptions: NextAuthOptions = {
           }
           const isPassword = await bcrypt.compare(
             credentials.password,
-            user.password
+            user.password!
           );
 
           if (!isPassword) {
@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === "google") {
           const isUser = await prismaDB.user.findUnique({
             where: {
-              email: user.email,
+              email: user.email!,
             },
           });
           if (isUser) {
@@ -71,8 +71,8 @@ export const authOptions: NextAuthOptions = {
           }
           const newUser = await prismaDB.user.create({
             data: {
-              email: user.email,
-              name: user.name,
+              email: user.email!,
+              name: user.name!,
               image: user.image,
             },
           });
@@ -87,14 +87,15 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       const Dbuser = await prismaDB.user.findUnique({
         where: {
-          email: token.email,
+          email: token.email!,
         },
       });
 
       if (user) {
-        (token.email = user.email), (token.id = Dbuser.id);
+        token.email = user.email;
+        token.id = Dbuser?.id!;
         token.name = user.name;
-        token.picture = Dbuser.image || user.image;
+        token.picture = Dbuser?.image || user.image;
       }
       return token;
     },
